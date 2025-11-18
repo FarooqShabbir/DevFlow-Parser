@@ -1,0 +1,133 @@
+# DevFlow DSL - Backus-Naur Form Grammar
+
+# Complete BNF Grammar Specification for DevFlow DSL
+
+<program>              ::= <pipeline_decl>+
+
+<pipeline_decl>        ::= pipeline <identifier> "{" <pipeline_body> "}"
+
+<pipeline_body>        ::= <trigger_decl>? <stage_decl>+ <artifact_decl>*
+
+<trigger_decl>         ::= on <trigger_list>
+
+<trigger_list>         ::= <trigger> ("," <trigger>)*
+
+<trigger>              ::= "push" | "pull_request" | "schedule" | "manual"
+                          | "push" "(" <branch_pattern> ")"
+                          | "pull_request" "(" <branch_pattern> ")"
+
+<branch_pattern>       ::= <string_literal>
+
+<stage_decl>           ::= stage <identifier> "{" <job_decl>+ "}"
+
+<job_decl>             ::= job <identifier> "{" <job_body> "}"
+
+<job_body>             ::= <image_decl>? <service_decl>* <step_decl>+ <artifact_decl>*
+                          | <matrix_decl> <job_body>
+
+<image_decl>           ::= image <string_literal>
+
+<service_decl>         ::= service <identifier> "{" <service_body> "}"
+
+<service_body>         ::= <image_decl> <port_decl>? <env_decl>*
+
+<port_decl>            ::= port <number> ":" <number>
+
+<matrix_decl>          ::= matrix "[" <matrix_axes> "]"
+
+<matrix_axes>          ::= <matrix_axis> ("," <matrix_axis>)*
+
+<matrix_axis>          ::= <identifier> ":" "[" <string_list> "]"
+
+<string_list>          ::= <string_literal> ("," <string_literal>)*
+
+<step_decl>            ::= step <step_type> ("(" <step_args> ")")? <step_block>?
+
+<step_type>            ::= "run" | "checkout" | "cache" | "deploy" | "notify"
+
+<step_args>            ::= <step_arg> ("," <step_arg>)*
+
+<step_arg>             ::= <identifier> "=" <expression>
+
+<step_block>           ::= "{" <statement>+ "}"
+
+<statement>            ::= <command> | <conditional> | <loop> | <assignment>
+
+<command>              ::= <string_literal> ";"
+
+<conditional>          ::= if "(" <expression> ")" "{" <statement>+ "}" 
+                          (else "{" <statement>+ "}")?
+
+<loop>                 ::= for "(" <identifier> in <expression> ")" "{" <statement>+ "}"
+
+<assignment>           ::= <identifier> "=" <expression> ";"
+
+<expression>           ::= <or_expr>
+
+<or_expr>              ::= <and_expr> ("||" <and_expr>)*
+
+<and_expr>             ::= <comparison> ("&&" <comparison>)*
+
+<comparison>           ::= <add_expr> (("==" | "!=" | "<" | ">" | "<=" | ">=") <add_expr>)?
+
+<add_expr>             ::= <mul_expr> (("+" | "-") <mul_expr>)*
+
+<mul_expr>             ::= <unary_expr> (("*" | "/") <unary_expr>)*
+
+<unary_expr>           ::= ("!" | "-")* <primary>
+
+<primary>              ::= <number> | <string_literal> | <identifier> 
+                          | "(" <expression> ")"
+                          | <function_call> | <env_var>
+
+<function_call>        ::= <identifier> "(" <expression_list>? ")"
+
+<expression_list>      ::= <expression> ("," <expression>)*
+
+<env_var>              ::= "$" <identifier>
+
+<env_decl>             ::= env <identifier> "=" <string_literal> ";"
+
+<artifact_decl>        ::= artifact <string_literal> ("," <string_literal>)* ";"
+
+<identifier>           ::= <letter> (<letter> | <digit> | "_")*
+
+<letter>               ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" 
+                          | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" 
+                          | "u" | "v" | "w" | "x" | "y" | "z" 
+                          | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" 
+                          | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" 
+                          | "U" | "V" | "W" | "X" | "Y" | "Z"
+
+<digit>                ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+<number>               ::= <digit>+
+
+<string_literal>       ::= '"' <string_char>* '"'
+
+<string_char>          ::= <any_char_except_quote> | "\\" <escape_char>
+
+<escape_char>          ::= '"' | "\\" | "n" | "t" | "r"
+
+<any_char_except_quote> ::= <any_char> except '"' and '\' when followed by non-escape
+
+# Token Definitions (Lexical Level)
+
+# Keywords
+pipeline, stage, job, step, on, service, image, port, env, artifact, matrix
+if, else, for, in, run, checkout, cache, deploy, notify
+push, pull_request, schedule, manual
+
+# Operators
+&&, ||, ==, !=, <=, >=, <, >, !, =, +, -, *, /
+
+# Delimiters
+{, }, [, ], (, ), ,, ;, :
+
+# Special
+$, {{, }}
+
+# Comments (not captured in parse tree)
+# Single-line: # ... \n
+# Multi-line: /* ... */
+

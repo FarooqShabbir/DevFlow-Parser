@@ -1,0 +1,27 @@
+pipeline docker_ci {
+    on push("main", "develop"), pull_request
+    
+    stage build {
+        job docker_build {
+            image "docker:latest"
+            step run("docker build -t myapp:${{ github.sha }} .");
+            step run("docker push registry.io/myapp:${{ github.sha }}");
+            artifact "docker-compose.yml";
+        }
+    }
+    
+    stage test {
+        job integration_tests {
+            image "node:18"
+            service postgres {
+                image "postgres:14"
+                port 5432:5432
+                env POSTGRES_DB = "testdb";
+                env POSTGRES_USER = "test";
+                env POSTGRES_PASSWORD = "testpass";
+            }
+            step run("npm run test:integration");
+        }
+    }
+}
+

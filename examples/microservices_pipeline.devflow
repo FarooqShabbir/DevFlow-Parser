@@ -1,0 +1,55 @@
+pipeline microservices_ci {
+    on push("main"), pull_request
+    
+    stage build {
+        job build_api {
+            image "golang:1.19"
+            step run("go build -o api ./cmd/api");
+            artifact "api", "config.yaml";
+        }
+        
+        job build_frontend {
+            image "node:18"
+            step run("npm install");
+            step run("npm run build");
+            artifact "dist/*", "package.json";
+        }
+    }
+    
+    stage test {
+        job test_api {
+            image "golang:1.19"
+            service postgres {
+                image "postgres:14"
+                port 5432:5432
+                env POSTGRES_DB = "testdb";
+            }
+            service redis {
+                image "redis:7"
+                port 6379:6379
+            }
+            step run("go test ./...");
+        }
+        
+        job test_frontend {
+            image "node:18"
+            step run("npm test");
+            step run("npm run test:e2e");
+        }
+    }
+    
+    stage deployment {
+        job deploy_api {
+            image "docker:latest"
+            step run("docker build -t api:${{ github.sha }} -f Dockerfile.api .");
+            step deploy(registry="ghcr.io", image="api");
+        }
+        
+        job deploy_frontend {
+            image "docker:latest"
+            step run("docker build -t frontend:${{ github.sha }} -f Dockerfile.frontend .");
+            step deploy(registry="ghcr.io", image="frontend");
+        }
+    }
+}
+

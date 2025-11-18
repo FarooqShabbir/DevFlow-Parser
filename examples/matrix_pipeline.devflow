@@ -1,0 +1,15 @@
+pipeline test_matrix {
+    on push
+    
+    stage test {
+        job test_versions {
+            matrix [node: ["14", "16", "18"], os: ["ubuntu-latest", "windows-latest"]]
+            image "node:${{ node }}"
+            
+            step checkout()
+            step run("npm install")
+            step run("npm test")
+        }
+    }
+}
+

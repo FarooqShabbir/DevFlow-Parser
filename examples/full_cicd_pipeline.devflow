@@ -1,0 +1,47 @@
+pipeline full_cicd {
+    on push("main", "develop"), pull_request, schedule("0 2 * * *")
+    
+    stage build {
+        job docker_build {
+            image "docker:latest"
+            step run("docker build -t myapp:${{ github.sha }} .");
+            step run("docker push registry.io/myapp:${{ github.sha }}");
+            artifact "docker-compose.yml";
+        }
+    }
+    
+    stage test {
+        job unit_tests {
+            image "node:18"
+            step run("npm test");
+        }
+        
+        job e2e_tests {
+            image "node:18"
+            service app {
+                image "registry.io/myapp:${{ github.sha }}"
+                port 3000:3000
+            }
+            service postgres {
+                image "postgres:14"
+                port 5432:5432
+                env POSTGRES_DB = "testdb";
+            }
+            step run("npm run test:e2e");
+        }
+    }
+    
+    stage deployment {
+        job deploy_staging {
+            image "ubuntu:latest"
+            step deploy(registry="ghcr.io", image="myapp");
+        }
+        
+        job deploy_production {
+            image "ubuntu:latest"
+            step deploy(registry="ghcr.io", image="myapp");
+            step notify(channel="slack", message="Production deployment complete!");
+        }
+    }
+}
+

@@ -1,0 +1,20 @@
+pipeline simple_ci {
+    on push("main"), pull_request
+    
+    stage build {
+        job compile {
+            image "node:18"
+            step run("npm install");
+            step run("npm run build");
+            artifact "dist/*", "package.json";
+        }
+    }
+    
+    stage test {
+        job unit_tests {
+            image "node:18"
+            step run("npm test");
+        }
+    }
+}
+

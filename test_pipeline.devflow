@@ -1,0 +1,40 @@
+pipeline my_test_pipeline {
+    on push("main"), pull_request
+    
+    stage build {
+        job compile {
+            image "node:18"
+            step run("npm install");
+            step run("npm run build");
+            artifact "dist/*", "package.json";
+        }
+    }
+    
+    stage test {
+        job unit_tests {
+            image "node:18"
+            step run("npm test");
+        }
+        
+        job integration_tests {
+            image "node:18"
+            service postgres {
+                image "postgres:14"
+                port 5432:5432
+                env POSTGRES_DB = "testdb";
+                env POSTGRES_USER = "test";
+                env POSTGRES_PASSWORD = "testpass";
+            }
+            step run("npm run test:integration");
+        }
+    }
+    
+    stage deployment {
+        job deploy_staging {
+            image "docker:latest"
+            step deploy(registry="ghcr.io", image="myapp");
+            step notify(channel="slack", message="Deployment to staging complete!");
+        }
+    }
+}
+
