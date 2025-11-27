@@ -716,6 +716,5 @@ See `grammar.bnf` file for the complete Backus-Naur Form grammar specification.
 See implementation files:
 - `devflow.y` - Bison grammar file
 - `devflow.l` - Flex lexer file
-- `main.c` - Main program
 - `Makefile` - Build configuration
 
